@@ -48,6 +48,15 @@ ACTION_PATH=${ACTION_PATH:+"$ACTION_PATH/src"}
 ACTION_PATH=${ACTION_PATH:-$(dirname "$(readlink -f "$0")")}
 source "$ACTION_PATH/helpers.sh"
 
+legend() {
+	info 'Legend:'
+	status_pass 'Check passed'
+	status_warn "Check passed with a warning and won't fail the job"
+	status_fail 'Check failed and will fail the job'
+	status_skip "Check skipped, due to another check or configuration and won't affect the job"
+	echo
+}
+
 # output_xxx write to GitHub Actions output to be later posted to a PR
 # status_xxx write to terminal
 
@@ -175,6 +184,7 @@ is_not_name()          { ! grep -qEe '\S+\s\S+' <<< "$1"; }
 is_revert()            { grep -qEe '^Revert ' <<< "$1"; }
 # shellcheck disable=SC2329
 omits()                { ! grep -qF "$2" <<< "$1"; }
+show_legend()          { [ "$SHOW_LEGEND" = 'true' ]; }
 
 have_exceptions() { [ "${#EXCEPTION_NAMES[@]}" -gt 0 ]; }
 
@@ -466,6 +476,8 @@ main() {
 
 	check_exceptions
 	echo
+
+	show_legend && legend
 
 	info "Checking PR #$PR_NUMBER"
 	check \
