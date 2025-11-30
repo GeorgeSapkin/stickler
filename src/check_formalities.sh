@@ -467,6 +467,14 @@ main() {
 	check_exceptions
 	echo
 
+	info "Checking PR #$PR_NUMBER"
+	check \
+		-rule 'Pull request must come from a feature branch' \
+		-pass-reason "\`$HEAD_BRANCH\` branch" \
+		-fail-if is_main_branch "$HEAD_BRANCH" \
+		-fail-actual "\`$HEAD_BRANCH\` branch"
+	echo
+
 	for commit in $(git "${REPO_PATH[@]}" rev-list "$BASE_BRANCH"..HEAD); do
 		HEADER_SET=0
 		COMMIT="$commit"
