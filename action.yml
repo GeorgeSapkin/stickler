@@ -1,0 +1,63 @@
+name: "HyperStickler"
+description: "Commit & PR Formalities Checker"
+author: George Sapkin
+
+branding:
+  icon: 'check-square'
+  color: 'green'
+
+inputs:
+  exclude_dependabot:
+    description: 'Exclude commits authored by dependabot from some checks'
+    default: 'true'
+    required: false
+  exclude_weblate:
+    description: 'Exclude commits authored by Weblate from some checks'
+    default: 'false'
+    required: false
+  post_comment:
+    description: 'Post summaries to the pull request'
+    default: 'false'
+    required: false
+  warn_on_no_modify:
+    description: 'Warn when PR edits by maintainers are not allowed. Requires post_comment to be true.'
+    default: 'false'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout source code
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        fetch-depth: 0
+
+    - name: Test formalities
+      id: formalities
+      shell: bash
+      run: "$ACTION_PATH/src/check_formalities.sh"
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        BRANCH: ${{ github.base_ref }}
+        EXCLUDE_DEPENDABOT: ${{ inputs.exclude_dependabot }}
+        EXCLUDE_WEBLATE: ${{ inputs.exclude_weblate }}
+
+    - name: Process GitHub formality check results
+      if: always() && inputs.post_comment == 'true'
+      uses: actions/github-script@v8
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        JOB_ID: ${{ job.check_run_id }}
+        SUMMARY: ${{ steps.formalities.outputs.content }}
+        WARN_ON_NO_MODIFY: ${{ inputs.warn_on_no_modify }}
+      with:
+        script: |
+          const processFormalities = require(`${process.env.ACTION_PATH}/src/process_formalities.js`)
+          await processFormalities({
+            github,
+            context,
+            jobId: process.env.JOB_ID,
+            summary: process.env.SUMMARY,
+            warnOnNoModify: process.env.WARN_ON_NO_MODIFY,
+          });

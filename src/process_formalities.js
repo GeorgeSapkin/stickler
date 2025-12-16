@@ -1,5 +1,9 @@
 'use strict'
 
+// Copyright (C) 2025, George Sapkin
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
 const BOT_LOGIN = "github-actions";
 const STEP_ANCHOR = "step:4:1";
 

@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Copyright (C) 2025, George Sapkin
+#
+# SPDX-License-Identifier: GPL-2.0-only
 
 # Based on https://openwrt.org/submitting-patches#submission_guidelines
 # Hard limit is arbitrary
@@ -19,11 +23,9 @@ REPO_PATH=${1:+-C "$1"}
 # shellcheck disable=SC2206
 REPO_PATH=($REPO_PATH)
 
-if [ -f 'workflow_context/.github/scripts/ci_helpers.sh' ]; then
-	source workflow_context/.github/scripts/ci_helpers.sh
-else
-	source .github/scripts/ci_helpers.sh
-fi
+ACTION_PATH=${ACTION_PATH:+"$ACTION_PATH/src"}
+ACTION_PATH=${ACTION_PATH:-$(dirname "$(readlink -f "$0")")}
+source "$ACTION_PATH/ci_helpers.sh"
 
 # Use these global vars to improve header creation readability
 COMMIT=""
