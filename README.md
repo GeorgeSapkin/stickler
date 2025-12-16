@@ -54,6 +54,36 @@ jobs:
           post_comment: true
 ```
 
+## Example output
+
+![Example output](assets/output.png)
+
+## Example status comment
+
+> [!WARNING]
+>
+> Some formality checks failed.
+>
+> Consider (re)reading [submissions guidelines](
+https://openwrt.org/submitting-patches#submission_guidelines).
+
+<details>
+<summary>Failed checks</summary>
+
+Issues marked with an :x: are failing checks.
+
+### Commit efa95656a79cdae0b976c6a5b28de91922a431a6
+
+- :x: Commit message must exist
+
+</details>
+
+  For more details, see the [full job log](https://github.com/GeorgeSapkin/openwrt-packages/actions/runs/20278728720/job/58239257139?pr=1#step:4:1).
+
+Something broken? Consider [providing feedback](
+https://github.com/openwrt/actions-shared-workflows/issues).
+
+
 ## License
 
 GNU General Public License v2.0 only
