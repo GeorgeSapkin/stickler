@@ -20,8 +20,9 @@ Commit & PR formalities checker based on the OpenWrt [submission guidelines](
   `MAX_SUBJECT_LEN_SOFT`) characters long. Limits are 60 and 50 by default,
   respectively and are configurable via the `max_subject_len_hard` and
   `max_subject_len_soft` inputs.
-- `Signed-off-by` must match author
-- `Signed-off-by` must not be a GitHub noreply email
+- `Signed-off-by` must match author. Enabled via the `check_signoff` input.
+- `Signed-off-by` must not be a GitHub noreply email. Enabled via the
+  `check_signoff` input.
 - Commit message must exist
 - Commit message lines should be <= `MAX_BODY_LINE_LEN` characters long. Limit
   is 75 by default and is configurable via the `max_body_line_len` input.
@@ -30,6 +31,11 @@ Commit & PR formalities checker based on the OpenWrt [submission guidelines](
 ## Inputs
 
 All inputs are optional.
+
+### `check_signoff`
+
+- Check if `Signed-off-by` exists and matches author.
+- Defaults to `false`.
 
 ### `exclude_dependabot`
 
@@ -94,6 +100,7 @@ jobs:
       - name: Check formalities
         uses: georgesapkin/stickler@main
         with:
+          check_signoff: true
           exclude_weblate: true
           post_comment: true
 ```

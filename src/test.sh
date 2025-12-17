@@ -10,6 +10,7 @@ export BASE_BRANCH='main'
 export HEAD_BRANCH='feature-branch'
 export PR_NUMBER='123'
 export SHOW_LEGEND='false'
+export CHECK_SIGNOFF='true'
 
 REPO_DIR="${1:-test-repo}"
 CHECKER_SCRIPT="$(dirname "$(readlink -f "$0")")/check_formalities.sh"
@@ -183,6 +184,20 @@ run_test 'Body: malicious body check injection' 0 0 1 \
 '-skip-if is_gt 1 0 && touch /tmp/pwned-by-check
 Signed-off-by: Good Author <good.author@example.com>' \
 0 '/tmp/pwned-by-check'
+
+export CHECK_SIGNOFF='false'
+run_test 'Body: missing Signed-off-by but check disabled' 0 0 3 \
+'Good Author' 'good.author@example.com' \
+'test: fail on missing signed-off-by' \
+'The Signed-off-by line is missing.'
+
+run_test 'Body: mismatched Signed-off-by but check disabled' 0 0 3 \
+'Good Author' 'good.author@example.com' \
+'test: fail on mismatched signed-off-by' \
+'The Signed-off-by line is for someone else.
+
+Signed-off-by: Mismatched Person <mismatched@example.com>'
+export CHECK_SIGNOFF='true'
 
 # Commits with failures
 

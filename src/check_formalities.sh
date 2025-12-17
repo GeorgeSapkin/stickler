@@ -10,6 +10,11 @@ MAX_SUBJECT_LEN_HARD=${MAX_SUBJECT_LEN_HARD:-60}
 MAX_SUBJECT_LEN_SOFT=${MAX_SUBJECT_LEN_SOFT:-50}
 MAX_BODY_LINE_LEN=${MAX_BODY_LINE_LEN:-75}
 
+CHECK_SIGNOFF=${CHECK_SIGNOFF:-false}
+EXCLUDE_DEPENDABOT=${EXCLUDE_DEPENDABOT:-false}
+EXCLUDE_WEBLATE=${EXCLUDE_WEBLATE:-false}
+SHOW_LEGEND=${SHOW_LEGEND:-true}
+
 if [ "$MAX_SUBJECT_LEN_SOFT" -gt "$MAX_SUBJECT_LEN_HARD" ]; then
 	echo "MAX_SUBJECT_LEN_SOFT cannot be larger than MAX_SUBJECT_LEN_HARD, now $MAX_SUBJECT_LEN_SOFT and $MAX_SUBJECT_LEN_HARD" >&2
 	exit 1
@@ -165,6 +170,9 @@ output_split_fail_ex() {
 		"${3:0:$1}" "${3:$1:$(($2 - $1))}" "${3:$2}" >> "$GITHUB_OUTPUT"
 }
 
+check_signoff()        { [ "$CHECK_SIGNOFF" = 'true' ]; }
+# shellcheck disable=SC2329
+do_not_check_signoff() { ! check_signoff; }
 # shellcheck disable=SC2329
 ends_with_period()     { grep -qEe "\.$" <<< "$1"; }
 exclude_dependabot()   { [ "$EXCLUDE_DEPENDABOT" = 'true' ]; }
@@ -271,6 +279,7 @@ check() {
 	local skip_fn skip_args
 	local skip_reason
 	local fn arity
+	local always=0
 
 	skip_reason=$(peak_reason)
 
@@ -279,7 +288,7 @@ check() {
 		case "$1" in
 			-rule)          rule="$2";          shift ;;
 			-pass-reason)   pass_reason="$2";   shift ;;
-			-always)        skip_reason=''            ;;
+			-always)        always=1;                 ;;
 			-skip-reason)   skip_reason="$2";   shift ;;
 			-fail-actual)   fail_actual="$2";   shift ;;
 			-fail-expected) fail_expected="$2"; shift ;;
@@ -326,7 +335,17 @@ check() {
 		shift
 	done
 
-	if { [ -n "$skip_fn" ] && "$skip_fn" "${skip_args[@]}"; } || { [ -z "$skip_fn" ] && [ -n "$skip_reason" ]; }; then
+	# Check order matters
+	# - if skip function is set and check passes
+	# - if skip function is not set and skip reason is set
+	# - if skip function is set and there is a skip reason in the stack
+	if { [ -n "$skip_fn" ] && "$skip_fn" "${skip_args[@]}"; } ||
+		{ [ "$always" = 0 ] && {
+			{ [ -z "$skip_fn" ] && [ -n "$skip_reason" ]; } ||
+			{ [ -n "$skip_fn" ] && have_reasons; }
+		} }
+	then
+		[ -z "$skip_reason" ] && skip_reason="$(peak_reason)"
 		output_skip "$rule" "$skip_reason"
 		return "$RES_SKIP"
 
@@ -411,6 +430,8 @@ check_body() {
 	# shellcheck disable=SC2016
 	check \
 		-rule '`Signed-off-by` must match author' \
+		-skip-if do_not_check_signoff \
+		-skip-reason 'disabled by configuration' \
 		-fail-if omits "$body" "$sob" \
 		-fail-actual "$reason" \
 		-fail-expected "\`$sob\`" \
@@ -419,6 +440,8 @@ check_body() {
 	# shellcheck disable=SC2016
 	check \
 		-rule '`Signed-off-by` must not be a GitHub noreply email' \
+		-skip-if do_not_check_signoff \
+		-skip-reason 'disabled by configuration' \
 		-fail-if is_github_noreply "$body" \
 		-fail-expected 'a real email address'
 
