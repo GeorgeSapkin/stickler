@@ -41,6 +41,11 @@ All inputs are optional.
 - Exclude commits authored by Weblate from some checks.
 - Defaults to `false`.
 
+### `feedback_url`
+
+- URL to provide feedback to.
+- Defaults to HyperStickler repository.
+
 ### `max_body_line_len`
 
 - Max body line length. Longer lines result in a warning.
@@ -119,8 +124,7 @@ Issues marked with an :x: are failing checks.
 
   For more details, see the [full job log](https://github.com/GeorgeSapkin/openwrt-packages/actions/runs/20278728720/job/58239257139?pr=1#step:4:1).
 
-Something broken? Consider [providing feedback](
-https://github.com/openwrt/actions-shared-workflows/issues).
+<sub>Something broken? Consider [providing feedback](https://github.com/GeorgeSapkin/hyperstickler/issues).</sub>
 
 ## Tests
 

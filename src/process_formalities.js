@@ -63,10 +63,9 @@ const NO_MODIFY=`
 https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork)
 `;
 
-const FEEDBACK=`
-Something broken? Consider [providing feedback](
-https://github.com/openwrt/actions-shared-workflows/issues).
-`;
+function getFeedbackFooter({ feedbackUrl }) {
+  return `<sub>Something broken? Consider [providing feedback](${feedbackUrl})</sub>`
+}
 
 async function hideOldSummaries({ github, owner, repo, issueNumber }) {
   const result = await github.graphql(GET_COMMENTS_QUERY, { owner, repo, issueNumber });
@@ -95,17 +94,18 @@ function getSummaryMessage({ context, jobId, summary }) {
   `;
 }
 
-function getCommentMessage({ context, jobId, noModify, summary }) {
+function getCommentMessage({ context, feedbackUrl, jobId, noModify, summary }) {
   return `
   ${summary.length > 0 ? getSummaryMessage({ context, jobId, summary }) : ''}
   ${noModify ? NO_MODIFY : ''}
-  ${FEEDBACK}
+  ${getFeedbackFooter({ feedbackUrl })}
   ${COMMENT_LOOKUP}
   `;
 }
 
 async function processFormalities({
   context,
+  feedbackUrl,
   github,
   jobId,
   summary,
@@ -125,7 +125,7 @@ async function processFormalities({
   }
 
   console.log("Posting new summary comment");
-  const body = getCommentMessage({ context, jobId, noModify, summary });
+  const body = getCommentMessage({ context, feedbackUrl, jobId, noModify, summary });
   return github.rest.issues.createComment({
     issue_number: issueNumber,
     owner,

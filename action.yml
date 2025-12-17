@@ -15,6 +15,10 @@ inputs:
     description: 'Exclude commits authored by Weblate from some checks'
     default: 'false'
     required: false
+  feedback_url:
+    description: 'URL to provide feedback to'
+    default: 'https://github.com/georgesapkin/hyperstickler/issues'
+    required: false
   max_body_line_len:
     description: 'Max body line length. Longer lines result in a warning.'
     default: '75'
@@ -54,6 +58,7 @@ runs:
         BASE_BRANCH: origin/${{ github.base_ref }}
         EXCLUDE_DEPENDABOT: ${{ inputs.exclude_dependabot }}
         EXCLUDE_WEBLATE: ${{ inputs.exclude_weblate }}
+        FEEDBACK_URL: ${{ inputs.feedback_url }}
         HEAD_BRANCH: ${{ github.head_ref }}
         MAX_BODY_LINE_LEN: ${{ inputs.max_body_line_len }}
         MAX_SUBJECT_LEN_HARD: ${{ inputs.max_subject_len_hard }}
@@ -65,6 +70,7 @@ runs:
       uses: actions/github-script@v8
       env:
         ACTION_PATH: ${{ github.action_path }}
+        FEEDBACK_URL: ${{ inputs.feedback_url }}
         JOB_ID: ${{ job.check_run_id }}
         SUMMARY: ${{ steps.formalities.outputs.content }}
         WARN_ON_NO_MODIFY: ${{ inputs.warn_on_no_modify }}
@@ -74,6 +80,7 @@ runs:
           await processFormalities({
             github,
             context,
+            feedbackUrl: process.env.FEEDBACK_URL,
             jobId: process.env.JOB_ID,
             summary: process.env.SUMMARY,
             warnOnNoModify: process.env.WARN_ON_NO_MODIFY,

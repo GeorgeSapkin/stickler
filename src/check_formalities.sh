@@ -22,6 +22,8 @@ DEPENDABOT_EMAIL='dependabot[bot]@users.noreply.github.com'
 GITHUB_NOREPLY_EMAIL='@users.noreply.github.com'
 WEBLATE_EMAIL='hosted@weblate.org'
 
+FEEDBACK_URL=${FEEDBACK_URL:-'https://github.com/georgesapkin/hyperstickler/issues'}
+
 EMOJI_WARN=':large_orange_diamond:'
 EMOJI_FAIL=':x:'
 
@@ -475,7 +477,7 @@ main() {
 
 	cat <<-EOF
 	Something broken? Consider providing feedback:
-	https://github.com/openwrt/actions-shared-workflows/issues
+	${FEEDBACK_URL}
 
 	EOF
 
