@@ -17,19 +17,14 @@ Commit & PR formalities checker based on the OpenWrt [submission guidelines](
 - Commit subject must start with a lower-case word after the prefix
 - Commit subject must not end with a period
 - Commit subject must be <= `MAX_SUBJECT_LEN_HARD` (and should be <=
-  `MAX_SUBJECT_LEN_SOFT`) characters long
-
-  `MAX_SUBJECT_LEN_SOFT` is 50
-
-  `MAX_SUBJECT_LEN_HARD` is 60
-
+  `MAX_SUBJECT_LEN_SOFT`) characters long. Limits are 60 and 50 by default,
+  respectively and are configurable via the `max_subject_len_hard` and
+  `max_subject_len_soft` inputs.
 - `Signed-off-by` must match author
 - `Signed-off-by` must not be a GitHub noreply email
 - Commit message must exist
-- Commit message lines should be <= `MAX_BODY_LINE_LEN` characters long
-
-  `MAX_BODY_LINE_LEN` is 75
-
+- Commit message lines should be <= `MAX_BODY_LINE_LEN` characters long. Limit
+  is 75 by default and is configurable via the `max_body_line_len` input.
 - Commit to stable branch should be marked as cherry-picked
 
 ## Inputs
@@ -39,23 +34,38 @@ All inputs are optional.
 ### `exclude_dependabot`
 
 - Exclude commits authored by dependabot from some checks.
-- Defaults to `true`
+- Defaults to `true`.
 
 ### `exclude_weblate`
 
 - Exclude commits authored by Weblate from some checks.
-- Defaults to `false`
+- Defaults to `false`.
+
+### `max_body_line_len`
+
+- Max body line length. Longer lines result in a warning.
+- Default to 75.
+
+### `max_subject_len_hard`
+
+- Hard max subject line length limit. Longer subjects fails check.
+- Default to 60.
+
+### `max_subject_len_soft`
+
+- Soft max subject line length limit. Longer subjects result in a warning.
+- Default to 50.
 
 ### `post_comment`
 
 - Post summaries to the pull request.
-- Defaults to `false`
+- Defaults to `false`.
 
 ### `warn_on_no_modify`
 
 - Warn when PR edits by maintainers are not allowed. Requires `post_comment` to
   be `true`.
-- Defaults to `false`
+- Defaults to `false`.
 
 ## Permissions
 

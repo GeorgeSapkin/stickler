@@ -15,6 +15,18 @@ inputs:
     description: 'Exclude commits authored by Weblate from some checks'
     default: 'false'
     required: false
+  max_body_line_len:
+    description: 'Max body line length. Longer lines result in a warning.'
+    default: '75'
+    required: false
+  max_subject_len_hard:
+    description: 'Hard max subject line length limit. Longer subjects fails check.'
+    default: '60'
+    required: false
+  max_subject_len_soft:
+    description: 'Soft max subject line length limit. Longer subjects result in a warning.'
+    default: '50'
+    required: false
   post_comment:
     description: 'Post summaries to the pull request'
     default: 'false'
@@ -43,6 +55,9 @@ runs:
         EXCLUDE_DEPENDABOT: ${{ inputs.exclude_dependabot }}
         EXCLUDE_WEBLATE: ${{ inputs.exclude_weblate }}
         HEAD_BRANCH: ${{ github.head_ref }}
+        MAX_BODY_LINE_LEN: ${{ inputs.max_body_line_len }}
+        MAX_SUBJECT_LEN_HARD: ${{ inputs.max_subject_len_hard }}
+        MAX_SUBJECT_LEN_SOFT: ${{ inputs.max_subject_len_soft }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
 
     - name: Process GitHub formality check results

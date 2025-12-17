@@ -6,9 +6,14 @@
 
 # Based on https://openwrt.org/submitting-patches#submission_guidelines
 # Hard limit is arbitrary
-MAX_SUBJECT_LEN_HARD=60
-MAX_SUBJECT_LEN_SOFT=50
-MAX_BODY_LINE_LEN=75
+MAX_SUBJECT_LEN_HARD=${MAX_SUBJECT_LEN_HARD:-60}
+MAX_SUBJECT_LEN_SOFT=${MAX_SUBJECT_LEN_SOFT:-50}
+MAX_BODY_LINE_LEN=${MAX_BODY_LINE_LEN:-75}
+
+if [ "$MAX_SUBJECT_LEN_SOFT" -gt "$MAX_SUBJECT_LEN_HARD" ]; then
+	echo "MAX_SUBJECT_LEN_SOFT cannot be larger than MAX_SUBJECT_LEN_HARD, now $MAX_SUBJECT_LEN_SOFT and $MAX_SUBJECT_LEN_HARD" >&2
+	exit 1
+fi
 
 INDENT_MD='    '
 INDENT_TERM='       '
