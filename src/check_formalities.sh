@@ -367,7 +367,7 @@ check_subject() {
 	local reason='missing prefix'
 	# shellcheck disable=SC2016
 	check \
-		-rule 'Commit subject must start with `<package name>: `' \
+		-rule 'Commit subject must start with `<package name or prefix>: `' \
 		-fail-if has_no_prefix "$subject" \
 		-fail-set-skip "$reason"
 
