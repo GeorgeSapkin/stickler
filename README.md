@@ -52,6 +52,11 @@ All inputs are optional.
 - URL to provide feedback to.
 - Defaults to HyperStickler repository.
 
+### `guideline_url`
+
+- Submission guideline URL used in PR comments.
+- Default to: https://www.kernel.org/doc/html/latest/process/submitting-patches.html
+
 ### `max_body_line_len`
 
 - Max body line length. Longer lines result in a warning.

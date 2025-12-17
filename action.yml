@@ -23,6 +23,10 @@ inputs:
     description: 'URL to provide feedback to'
     default: 'https://github.com/georgesapkin/hyperstickler/issues'
     required: false
+  guideline_url:
+    description: 'Submission guideline URL used in PR comments'
+    default: 'https://www.kernel.org/doc/html/latest/process/submitting-patches.html'
+    required: false
   max_body_line_len:
     description: 'Max body line length. Longer lines result in a warning.'
     default: '75'
@@ -76,6 +80,7 @@ runs:
       env:
         ACTION_PATH: ${{ github.action_path }}
         FEEDBACK_URL: ${{ inputs.feedback_url }}
+        GUIDELINE_URL: ${{ inputs.guideline_url }}
         JOB_ID: ${{ job.check_run_id }}
         SUMMARY: ${{ steps.formalities.outputs.content }}
         WARN_ON_NO_MODIFY: ${{ inputs.warn_on_no_modify }}
@@ -86,6 +91,7 @@ runs:
             github,
             context,
             feedbackUrl: process.env.FEEDBACK_URL,
+            guidelineUrl: process.env.GUIDELINE_URL,
             jobId: process.env.JOB_ID,
             summary: process.env.SUMMARY,
             warnOnNoModify: process.env.WARN_ON_NO_MODIFY,

@@ -36,20 +36,6 @@ const MINIMIZE_COMMENT_MUTATION = `
 
 const COMMENT_LOOKUP = "<!-- FORMALITY_LOOKUP -->";
 
-const SUMMARY_HEADER=`
-> [!WARNING]
->
-> Some formality checks failed.
->
-> Consider (re)reading [submissions guidelines](
-https://openwrt.org/submitting-patches#submission_guidelines).
-
-<details>
-<summary>Failed checks</summary>
-
-Issues marked with an :x: are failing checks.
-`;
-
 const SUMMARY_FOOTER=`
 </details>
 `;
@@ -63,8 +49,23 @@ const NO_MODIFY=`
 https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork)
 `;
 
+function getSummaryHeader({ guidelineUrl }) {
+  return `
+> [!WARNING]
+>
+> Some formality checks failed.
+>
+> Consider (re)reading [submissions guidelines](${guidelineUrl}).
+
+<details>
+<summary>Failed checks</summary>
+
+Issues marked with an :x: are failing checks.
+`
+}
+
 function getFeedbackFooter({ feedbackUrl }) {
-  return `<sub>Something broken? Consider [providing feedback](${feedbackUrl})</sub>`
+  return `<sub>Something broken? Consider [providing feedback](${feedbackUrl}).</sub>`
 }
 
 async function hideOldSummaries({ github, owner, repo, issueNumber }) {
@@ -85,28 +86,34 @@ function getJobUrl({ context, jobId }) {
   return `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/job/${jobId}?pr=${context.issue.number}#${STEP_ANCHOR}`;
 }
 
-function getSummaryMessage({ context, jobId, summary }) {
+function getSummaryMessage({ context, guidelineUrl, jobId, summary }) {
   return `
-  ${SUMMARY_HEADER}
-  ${summary}
-  ${SUMMARY_FOOTER}
-  For more details, see the [full job log](${getJobUrl({ context, jobId })}).
-  `;
+${getSummaryHeader({ guidelineUrl })}
+${summary}
+${SUMMARY_FOOTER}
+For more details, see the [full job log](${getJobUrl({ context, jobId })}).
+`;
 }
 
-function getCommentMessage({ context, feedbackUrl, jobId, noModify, summary }) {
+function getCommentMessage({
+  context, feedbackUrl, guidelineUrl, jobId, noModify, summary
+}) {
   return `
-  ${summary.length > 0 ? getSummaryMessage({ context, jobId, summary }) : ''}
-  ${noModify ? NO_MODIFY : ''}
-  ${getFeedbackFooter({ feedbackUrl })}
-  ${COMMENT_LOOKUP}
-  `;
+${summary.length > 0
+  ? getSummaryMessage({ context, guidelineUrl, jobId, summary })
+  : ''
+}
+${noModify ? NO_MODIFY : ''}
+${getFeedbackFooter({ feedbackUrl })}
+${COMMENT_LOOKUP}
+`;
 }
 
 async function processFormalities({
   context,
   feedbackUrl,
   github,
+  guidelineUrl,
   jobId,
   summary,
   warnOnNoModify,
@@ -125,7 +132,9 @@ async function processFormalities({
   }
 
   console.log("Posting new summary comment");
-  const body = getCommentMessage({ context, feedbackUrl, jobId, noModify, summary });
+  const body = getCommentMessage({
+    context, feedbackUrl, guidelineUrl, jobId, noModify, summary
+  });
   return github.rest.issues.createComment({
     issue_number: issueNumber,
     owner,
