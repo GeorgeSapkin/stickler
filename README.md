@@ -213,7 +213,7 @@ For more details, see the [full job log](https://github.com/GeorgeSapkin/hyperst
 ## Tests
 
 ```bash
-src/test.sh /tmp/some-tmp-path
+src/test.sh
 ```
 
 ## License

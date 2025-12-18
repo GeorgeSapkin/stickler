@@ -12,18 +12,14 @@ export PR_NUMBER='123'
 export SHOW_LEGEND='false'
 export CHECK_SIGNOFF='true'
 
-REPO_DIR="${1:-test-repo}"
+REPO_DIR="${1:-}"
+
 CHECKER_SCRIPT="$(dirname "$(readlink -f "$0")")/check_formalities.sh"
 
 source "$(dirname "$(readlink -f "$0")")/helpers.sh"
 
 TEST_COUNT=0
 PASS_COUNT=0
-
-if [ -d "$REPO_DIR" ]; then
-	echo "Test repository '$REPO_DIR' already exists" >&2
-	exit 1
-fi
 
 cleanup() {
 	if [ -d "$REPO_DIR" ]; then
@@ -114,13 +110,23 @@ run_test() {
 		fi
 		echo
 		echo '       Output:'
+		# shellcheck disable=SC2001
 		sed 's/^/       /' <<< "$output"
 	fi
 
 	git reset --hard HEAD~1 >/dev/null
 }
 
-mkdir "$REPO_DIR"
+if [ -z "$REPO_DIR" ]; then
+	REPO_DIR=$(mktemp -d)
+else
+	if [ -d "$REPO_DIR" ]; then
+		echo "Test repository '$REPO_DIR' already exists" >&2
+		exit 1
+	fi
+	mkdir "$REPO_DIR"
+fi
+
 cd "$REPO_DIR"
 
 git init -b "$BASE_BRANCH"
@@ -171,6 +177,7 @@ run_test 'Revert commit' 0 0 5 \
 
 Signed-off-by: Revert Author <revert.author@example.com>'
 
+# shellcheck disable=SC2016
 run_test 'Body: malicious body shell injection' 0 0 1 \
 'Good Author' 'good.author@example.com' \
 'test: malicious body shell injection' \
