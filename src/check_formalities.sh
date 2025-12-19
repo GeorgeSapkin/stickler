@@ -187,6 +187,7 @@ do_not_check_signoff() { ! check_signoff; }
 ends_with_period()     { grep -qEe "\.$" <<< "$1"; }
 exclude_dependabot()   { [ "$EXCLUDE_DEPENDABOT" = 'true' ]; }
 exclude_weblate()      { [ "$EXCLUDE_WEBLATE" = 'true' ]; }
+has_base()             { [ -n "$BASE_BRANCH" ]; }
 # shellcheck disable=SC2329
 has_no_prefix()        { ! grep -qEe "$PREFIX_REGEX" <<< "$1"; }
 # shellcheck disable=SC2329
@@ -475,17 +476,16 @@ check_body() {
 				output_split_fail "$MAX_BODY_LINE_LEN" "$line"
 			fi
 		done <<< "$body"
-		if [ "$body_line_too_long" = 0 ]; then
-			status_pass "$msg"
-		fi
+		[ "$body_line_too_long" = 0 ] && status_pass "$msg"
 	else
 		output_skip "$msg" "${SKIP_REASONS[-1]}"
 	fi
 
-	# Never skip this check based on other checks
+	reset_reasons
+	has_base || push_reason 'no base branch specified'
+
 	check \
 		-rule 'Commit to stable branch should be marked as cherry-picked' \
-		-always \
 		-skip-if is_main_branch "$BASE_BRANCH" \
 		-skip-reason "not a stable branch (\`${BASE_BRANCH#origin/}\`)" \
 		-warn-if omits "$body" '(cherry picked from commit' \
@@ -516,7 +516,7 @@ main() {
 	echo
 
 	# Combine rev-list and fetching commit data
-	git "${REPO_PATH[@]}" rev-list --color=always --format="$GIT_FORMAT" "$BASE_BRANCH"..HEAD | {
+	git "${REPO_PATH[@]}" rev-list --color=always --format="$GIT_FORMAT" ${BASE_BRANCH:+"$BASE_BRANCH"..}HEAD | {
 		local commit_header
 		local commit
 		local author_name author_email
