@@ -56,6 +56,15 @@ REPO_PATH=${1:+-C "$1"}
 # shellcheck disable=SC2206
 REPO_PATH=($REPO_PATH)
 
+# Delimiters for git commit formatting
+_F=$'\xf0'
+_R=$'\xfa'
+
+# Fetch all data from a commit in one go
+GIT_HEADER='%C(yellow)commit %H%n%C(reset)Author: %an <%ae>%nCommit: %cn <%ce>%n%n%w(0,4,4)%B'
+GIT_VARS="%H${_F}%aN${_F}%aE${_F}%cN${_F}%cE${_F}%s${_F}%b${_F}Signed-off-by: %aN <%aE>${_F}%P"
+GIT_FORMAT="${_F}${GIT_HEADER}${_F}${GIT_VARS}${_R}"
+
 ACTION_PATH=${ACTION_PATH:+"$ACTION_PATH/src"}
 ACTION_PATH=${ACTION_PATH:-$(dirname "$(readlink -f "$0")")}
 source "$ACTION_PATH/helpers.sh"
@@ -178,7 +187,6 @@ do_not_check_signoff() { ! check_signoff; }
 ends_with_period()     { grep -qEe "\.$" <<< "$1"; }
 exclude_dependabot()   { [ "$EXCLUDE_DEPENDABOT" = 'true' ]; }
 exclude_weblate()      { [ "$EXCLUDE_WEBLATE" = 'true' ]; }
-git_format()           { git "${REPO_PATH[@]}" show -s --format="$1" "$COMMIT"; }
 # shellcheck disable=SC2329
 has_no_prefix()        { ! grep -qEe "$PREFIX_REGEX" <<< "$1"; }
 # shellcheck disable=SC2329
@@ -192,7 +200,7 @@ is_gt()                { [ "$1" -gt "$2" ]; }
 # shellcheck disable=SC2329
 is_main_branch()       { [[ "$1" =~ ^(origin/)?(main|master)$ ]]; }
 # shellcheck disable=SC2329
-is_merge()             { git_format '%P' | grep -qF ' '; }
+is_merge()             { grep -qF ' ' <<< "$1"; }
 # shellcheck disable=SC2329
 is_not_alias()         { ! grep -qEe '\S' <<< "$1"; }
 # shellcheck disable=SC2329
@@ -485,14 +493,6 @@ check_body() {
 }
 
 main() {
-	local author_email
-	local author_name
-	local body
-	local commit
-	local committer_email
-	local committer_name
-	local subject
-
 	# Initialize GitHub actions output
 	output 'content<<EOF'
 
@@ -515,47 +515,57 @@ main() {
 		-fail-actual "\`$HEAD_BRANCH\` branch"
 	echo
 
-	for commit in $(git "${REPO_PATH[@]}" rev-list "$BASE_BRANCH"..HEAD); do
-		HEADER_SET=0
-		COMMIT="$commit"
+	# Combine rev-list and fetching commit data
+	git "${REPO_PATH[@]}" rev-list --color=always --format="$GIT_FORMAT" "$BASE_BRANCH"..HEAD | {
+		local commit_header
+		local commit
+		local author_name author_email
+		local committer_name committer_email
+		local subject body sob
+		local parent_hashes
 
-		git "${REPO_PATH[@]}" log -1 --color --pretty=full "$commit"
-		echo
+		# git rev-list automatically adds commit hash as the first line, skip it
+		while IFS="$_F" read -r -d "$_R" \
+			__skip__ \
+			commit_header \
+			commit \
+			author_name \
+			author_email \
+			committer_name \
+			committer_email \
+			subject \
+			body \
+			sob \
+			parent_hashes
+		do
+			HEADER_SET=0
+			COMMIT="$commit"
 
-		check \
-			-rule 'Pull request must not include merge commits' \
-			-always \
-			-fail-if is_merge
+			echo "$commit_header"
 
-		if [ $? = "$RES_FAIL" ]; then
-			# No need to check anything else, since this is a merge commit
+			check \
+				-rule 'Pull request must not include merge commits' \
+				-always \
+				-fail-if is_merge "$parent_hashes"
+
+			if [ $? = "$RES_FAIL" ]; then
+				# No need to check anything else, since this is a merge commit
+				echo
+				continue
+			fi
+
+			reset_reasons "$author_email"
+			check_name 'Author' "$author_name"
+			check_email 'Author' "$author_email"
+			check_name 'Commit(ter)' "$committer_name"
+			check_email 'Commit(ter)' "$committer_email"
+			check_subject "$subject"
+			reset_reasons "$author_email"
+			check_body "$body" "$sob"
+
 			echo
-			continue
-		fi
-
-		author_name="$(git_format '%aN')"
-		author_email="$(git_format '%aE')"
-		committer_name="$(git_format '%cN')"
-		committer_email="$(git_format '%cE')"
-
-		reset_reasons "$author_email"
-
-		check_name 'Author' "$author_name"
-		check_email 'Author' "$author_email"
-		check_name 'Commit(ter)' "$committer_name"
-		check_email 'Commit(ter)' "$committer_email"
-
-		subject="$(git_format '%s')"
-		check_subject "$subject"
-
-		reset_reasons "$author_email"
-
-		body="$(git_format '%b')"
-		sob="$(git_format 'Signed-off-by: %aN <%aE>' "$commit")"
-		check_body "$body" "$sob"
-
-		echo
-	done
+		done
+	}
 
 	output 'EOF'
 
