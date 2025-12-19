@@ -215,8 +215,8 @@ is_exception() {
 	fi
 
 	for idx in "${!EXCEPTION_EMAILS[@]}"; do
-		if grep -iqF "${EXCEPTION_EMAILS[idx]}" <<< "$email"; then
-			echo "${EXCEPTION_NAMES[idx]}"
+		if grep -iqF "${EXCEPTION_EMAILS[$idx]}" <<< "$email"; then
+			echo "${EXCEPTION_NAMES[$idx]}"
 			return 0
 		fi
 	done
@@ -247,6 +247,7 @@ reset_reasons() {
 
 	SKIP_REASONS=()
 	exception="$(is_exception "$author_email")"
+	# shellcheck disable=SC2181
 	if [ $? = 0 ]; then
 		push_reason "authored by $exception"
 	fi
