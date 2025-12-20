@@ -4,8 +4,6 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-set -e
-
 # Default exports
 export BASE_BRANCH='main'
 export CHECK_SIGNOFF='true'
@@ -13,14 +11,15 @@ export HEAD_BRANCH='feature-branch'
 export PR_NUMBER='123'
 export SHOW_LEGEND='false'
 
-REPO_DIR="${1:-}"
+MAX_JOBS=$(nproc --all 2>/dev/null || echo 8)
+MAX_TEST_WAIT=50
+
+VERBOSE=
+REPO_DIR=
 
 CHECKER_SCRIPT="$(dirname "$(readlink -f "$0")")/check_formalities.sh"
 
 source "$(dirname "$(readlink -f "$0")")/helpers.sh"
-
-TEST_COUNT=0
-PASS_COUNT=0
 
 AUTHORS=()
 BODIES=()
@@ -45,7 +44,7 @@ define() {
 			-author)   author="$2";    shift ;;
 			-email)    email="$2";     shift ;;
 			-expected) expected="$2";  shift ;;
-			-exists)   exists="$2"; shift ;;
+			-exists)   exists="$2";    shift ;;
 			-merge)    merge="$2";     shift ;;
 			-subject)  subject="$2";   shift ;;
 			-test)     name="$2";      shift ;;
@@ -144,7 +143,7 @@ define \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: malicious body shell injection' \
-	-exists     '/tmp/pwned-by-body' \
+	-exists        '/tmp/pwned-by-body' \
 	-body          <<-'EOF'
 		$(touch /tmp/pwned-by-body)
 		Signed-off-by: Good Author <good.author@example.com>
@@ -156,7 +155,7 @@ define \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: malicious body check injection' \
-	-exists     '/tmp/pwned-by-check' \
+	-exists        '/tmp/pwned-by-check' \
 	-body          <<-'EOF'
 		-skip-if is_gt 1 0 && touch /tmp/pwned-by-check
 		Signed-off-by: Good Author <good.author@example.com>
@@ -386,7 +385,7 @@ define \
 
 cleanup() {
 	if [ -d "$REPO_DIR" ]; then
-		echo "Cleaning up Git repository in $REPO_DIR"
+		[ -z "$PARALLEL_WORKER" ] && echo "Cleaning up temporary directory '$REPO_DIR'"
 		rm -rf "$REPO_DIR"
 	fi
 }
@@ -440,19 +439,8 @@ run_test() {
 	local merge="${7:-0}"
 	local injection_file="${8:-}"
 
-	status_wait "$description"
-
 	local expected_results
 	read -r -a expected_results <<< "$expected_results_str"
-
-	local output
-	local line
-	local check_idx=0
-	local fail=0
-	local output=""
-	local injection_failed=0
-
-	TEST_COUNT=$((TEST_COUNT + 1))
 
 	[ "$merge" = 1 ] && git switch "$BASE_BRANCH" >/dev/null 2>&1
 	commit "$author" "$email" "$subject" "$body" >/dev/null
@@ -461,13 +449,13 @@ run_test() {
 		&& git merge --no-ff "$BASE_BRANCH" -m "Merge branch '$BASE_BRANCH' into '$HEAD_BRANCH" >/dev/null 2>&1
 
 	set +e
-	output=$("$CHECKER_SCRIPT" "$REPO_DIR" 2>&1)
+	local raw_output
+	raw_output=$("$CHECKER_SCRIPT" "$REPO_DIR" 2>&1)
 	local exit_code=$?
 	set -e
 
-	# Move cursor to the beginning of the line and clear it
-	printf '\r\e[K'
-
+	local fail=0
+	local injection_failed=0
 	if [ -n "$injection_file" ] && [ -f "$injection_file" ]; then
 		fail=1
 		injection_failed=1
@@ -475,9 +463,6 @@ run_test() {
 		echo "       Injection test failed: file '$injection_file' was created."
 		rm -f "$injection_file"
 	fi
-
-	local raw_output="$output"
-	output=""
 
 	local expect_failure=0
 	for res in "${expected_results[@]}"; do
@@ -487,6 +472,7 @@ run_test() {
 		fi
 	done
 
+	local output
 	if [ "$expect_failure" = 1 ]; then
 		if [ "$exit_code" = 0 ]; then
 			fail=1
@@ -497,6 +483,10 @@ run_test() {
 		output+=$'\e[1;31mExpected test success, but got exit code '"$exit_code"$'\e[0m\n\n'
 	fi
 
+	output+=$'Output:\n\n'
+
+	local line
+	local check_idx=0
 	while IFS= read -r line; do
 		local clean_line
 		# Strip ANSI color codes
@@ -536,22 +526,86 @@ run_test() {
 		output+=$'       \e[1;31mMissing expected results starting from index '"$check_idx"$'\e[0m\n'
 	fi
 
-	if [ "$fail" -eq 0 ]; then
+	if [ "$fail" = 0 ]; then
 		status_pass "$description"
-		PASS_COUNT=$((PASS_COUNT + 1))
+		if [ "$VERBOSE" = 'true' ]; then
+			# shellcheck disable=SC2001
+			sed 's/^/       /' <<< "$output"
+		fi
+		return 0
 	else
 		[ "$injection_failed" = 0 ] && status_fail "$description"
-		output+=$'\n       Output:'
 		# shellcheck disable=SC2001
 		sed 's/^/       /' <<< "$output"
+		return 1
+	fi
+}
+
+run_worker() {
+	local idx="$1"
+	local base_dir="$2"
+	local repo_dir="$base_dir/$idx"
+
+	mkdir -p "$repo_dir"
+	cd "$repo_dir" || exit 1
+
+	REPO_DIR="$repo_dir"
+
+	git init -b "$BASE_BRANCH" >/dev/null
+	git config user.name 'Test User'
+	git config user.email 'test.user@example.com'
+	commit 'Initial Committer' 'initial@example.com' 'initial: commit' 'This is the first main commit.' >/dev/null
+	git switch -C "$HEAD_BRANCH" >/dev/null 2>&1
+
+	export CHECK_SIGNOFF="${ENV_CHECK_SIGNOFF[$idx]}"
+	export EXCLUDE_DEPENDABOT="${ENV_EXCLUDE_DEPENDABOT[$idx]}"
+	export EXCLUDE_WEBLATE="${ENV_EXCLUDE_WEBLATE[$idx]}"
+	export HEAD_BRANCH="${ENV_HEAD_BRANCH[$idx]}"
+	export PARALLEL_WORKER=true
+
+	local output
+	output=$(run_test \
+		"${DESCRIPTIONS[$idx]}" \
+		"${EXPECTED_RESULTS[$idx]}" \
+		"${AUTHORS[$idx]}" \
+		"${EMAILS[$idx]}" \
+		"${SUBJECTS[$idx]}" \
+		"${BODIES[$idx]}" \
+		"${MERGES[$idx]}" \
+		"${INJECTIONS[$idx]}")
+	local res=$?
+
+	echo "$output" > "$base_dir/$idx.log"
+
+	if [ "$res" = 0 ]; then
+		touch "$base_dir/$idx.pass"
+	else
+		touch "$base_dir/$idx.fail"
 	fi
 
-	git reset --hard HEAD~1 >/dev/null
+	return "$res"
 }
 
 main() {
+	local worker_idx worker_base
+	while [ $# -gt 0 ]; do
+		case "$1" in
+			--base)        worker_base="$2";  shift 2; ;;
+			--idx)         worker_idx="$2";   shift 2; ;;
+			-v|--verbose)  VERBOSE='true';    shift;   ;;
+			*)             REPO_DIR="${1:-}"; break;   ;;
+		esac
+	done
+	export VERBOSE
+
+	if [ -n "$worker_idx" ] && [ -n "$worker_base" ]; then
+		run_worker "$worker_idx" "$worker_base"
+		exit $?
+	fi
+
 	if [ -z "$REPO_DIR" ]; then
 		REPO_DIR=$(mktemp -d)
+		echo "Using temporary directory '$REPO_DIR'"
 	else
 		if [ -d "$REPO_DIR" ]; then
 			echo "Test repository '$REPO_DIR' already exists" >&2
@@ -560,43 +614,49 @@ main() {
 		mkdir "$REPO_DIR"
 	fi
 
-	cd "$REPO_DIR"
-
-	git init -b "$BASE_BRANCH"
-	git config user.name 'Test User'
-	git config user.email 'test.user@example.com'
-
-	commit 'Initial Committer' 'initial@example.com' \
-	'initial: commit' \
-	'This is the first main commit.' >/dev/null
-
-	git switch -C "$HEAD_BRANCH"
-
 	echo $'\nStarting test suite\n'
 
-	for i in "${!DESCRIPTIONS[@]}"; do
-		export CHECK_SIGNOFF="${ENV_CHECK_SIGNOFF[$i]}"
-		export EXCLUDE_DEPENDABOT="${ENV_EXCLUDE_DEPENDABOT[$i]}"
-		export EXCLUDE_WEBLATE="${ENV_EXCLUDE_WEBLATE[$i]}"
-		export HEAD_BRANCH="${ENV_HEAD_BRANCH[$i]}"
+	local self
+	self=$(readlink -f "$0")
 
-		run_test \
-			"${DESCRIPTIONS[$i]}" \
-			"${EXPECTED_RESULTS[$i]}" \
-			"${AUTHORS[$i]}" \
-			"${EMAILS[$i]}" \
-			"${SUBJECTS[$i]}" \
-			"${BODIES[$i]}" \
-			"${MERGES[$i]}" \
-			"${INJECTIONS[$i]}"
+	# Run tests in parallel in the background
+	(
+		seq 0 $((${#DESCRIPTIONS[@]} - 1)) |
+		xargs -P "$MAX_JOBS" -I {} "$self" ${VERBOSE:+--verbose} --idx {} --base "$REPO_DIR" || true; \
+		touch "$REPO_DIR/.done"
+	) >/dev/null 2>&1 &
+	local pid=$!
+
+	# Display results in order as they become available
+	for idx in "${!DESCRIPTIONS[@]}"; do
+		local log_file="$REPO_DIR/$idx.log"
+		local wait_count=0
+		while [ ! -f "$log_file" ]; do
+			if [ -f "$REPO_DIR/.done" ] || [ "$wait_count" -ge "$MAX_TEST_WAIT" ]; then
+				status_fail "${DESCRIPTIONS[$idx]}"
+				err "       Test timed out"
+				continue 2
+			fi
+			wait_count=$((wait_count + 1))
+			sleep 0.1
+		done
+
+		[ -f "$log_file" ] && cat "$log_file"
 	done
 
-	echo $'\nTest suite finished'
-	echo "Summary: $PASS_COUNT/$TEST_COUNT tests passed"
+	wait "$pid" || true
 
-	[ "$PASS_COUNT" != "$TEST_COUNT" ] \
+	local pass_count fail_count test_count
+	pass_count=$(find "$REPO_DIR" -name "*.pass" | wc -l)
+	fail_count=$(find "$REPO_DIR" -name "*.fail" | wc -l)
+	test_count=$((pass_count + fail_count))
+
+	echo $'\nTest suite finished'
+	echo "Summary: $pass_count/$test_count tests passed"
+
+	[ "$pass_count" != "$test_count" ] \
 		&& exit 1 \
 		|| exit 0
 }
 
-main
+main "$@"
