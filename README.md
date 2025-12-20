@@ -1,5 +1,8 @@
 # HyperStickler
 
+[![test status](https://github.com/georgesapkin/hyperstickler/actions/workflows/test.yml/badge.svg?branch=main)](
+  https://github.com/GeorgeSapkin/hyperstickler/actions/workflows/test.yml?query=branch%3Amain)
+
 Commit & PR formalities checker based on the OpenWrt [submission guidelines](
   https://openwrt.org/submitting-patches#submission_guidelines).
 

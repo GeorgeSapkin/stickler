@@ -1,0 +1,19 @@
+name: Self Test
+
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+
+jobs:
+  test:
+    name: Self Test
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: src
+
+      - name: Run self tests
+        run: ./src/test.sh
