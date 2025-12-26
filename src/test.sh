@@ -446,7 +446,7 @@ run_test() {
 	commit "$author" "$email" "$subject" "$body" >/dev/null
 	[ "$merge" = 1 ] \
 		&& git switch "$HEAD_BRANCH" >/dev/null 2>&1 \
-		&& git merge --no-ff "$BASE_BRANCH" -m "Merge branch '$BASE_BRANCH' into '$HEAD_BRANCH" >/dev/null 2>&1
+		&& git merge --no-ff "$BASE_BRANCH" -m "Merge branch '$BASE_BRANCH' into '$HEAD_BRANCH'" >/dev/null 2>&1
 
 	set +e
 	local raw_output
