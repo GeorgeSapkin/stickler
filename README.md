@@ -113,7 +113,7 @@ jobs:
     name: Formalities
     steps:
       - name: Check formalities
-        uses: georgesapkin/stickler@main
+        uses: georgesapkin/hyperstickler@main
         with:
           check_signoff: true
           exclude_weblate: true
