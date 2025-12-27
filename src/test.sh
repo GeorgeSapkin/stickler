@@ -320,6 +320,18 @@ define \
 	EOF
 
 define \
+	-test          'Body: line almost too long' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-author        'Good Author' \
+	-email         'good.author@example.com' \
+	-subject       'test: pass on not too long body line' \
+	-body          <<-'EOF'
+		This line in the commit body is almost too long and shouldn't fail the test
+
+		Signed-off-by: Good Author <good.author@example.com>
+	EOF
+
+define \
 	-test          'Exception: dependabot' \
 	-expected      '0 0 3 3 3 3 3 3 3 3 3 3 3 0 3 3' \
 	-author        'dependabot[bot]' \

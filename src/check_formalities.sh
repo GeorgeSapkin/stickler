@@ -64,7 +64,9 @@ _R=$'\xfa'
 
 # Fetch all data from a commit in one go
 GIT_HEADER='%C(yellow)commit %H%n%C(reset)Author: %an <%ae>%nCommit: %cn <%ce>%n%n%w(0,4,4)%B'
-GIT_VARS="%H${_F}%aN${_F}%aE${_F}%cN${_F}%cE${_F}%s${_F}%b${_F}Signed-off-by: %aN <%aE>${_F}%P"
+# GH actions sometimes return a mix of body %b and raw body %B when body is
+# requested, so always use raw body
+GIT_VARS="%H${_F}%aN${_F}%aE${_F}%cN${_F}%cE${_F}%s${_F}%B${_F}Signed-off-by: %aN <%aE>${_F}%P"
 GIT_FORMAT="${_F}${GIT_HEADER}${_F}${GIT_VARS}${_R}"
 
 ACTION_PATH=${ACTION_PATH:+"$ACTION_PATH/src"}
@@ -461,6 +463,20 @@ check_subject() {
 check_body() {
 	local body="$1"
 	local sob="$2"
+
+	# If there are more lines than a subject
+	if [[ "$body" == *$'\n'* ]]; then
+		# Filter out subject from raw body
+		body="${body#*$'\n'}"
+
+		# Filter out line prefixes from raw body
+		body="${body#    }"
+		body="${body//$'\n'    /$'\n'}"
+
+	# There only a subject and no body
+	else
+		body=''
+	fi
 
 	local reason="missing or doesn't match author"
 	# shellcheck disable=SC2016
