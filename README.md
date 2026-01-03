@@ -8,29 +8,30 @@ Commit & PR formalities checker based on the OpenWrt [submission guidelines](
 
 ## Rules
 
-- Pull request must come from a feature branch
-- Pull request must not include merge commits
+- Pull request must come from a feature branch. Configured via the
+  `check_branch` input.
+- Pull request must not include merge commits.
 - Author name must be either a real name 'firstname lastname' or a
-  nickname/alias/handle
-- Author email must not be a GitHub noreply email
+  nickname/alias/handle.
+- Author email must not be a GitHub noreply email.
 - Commit(ter) name must be either a real name 'firstname lastname' or a
-  nickname/alias/handle
-- Commit(ter) email must not be a GitHub noreply email
-- Commit subject must not start with whitespace
-- Commit subject must start with `<package name or prefix>: `
-- Commit subject must start with a lower-case word after the prefix
-- Commit subject must not end with a period
+  nickname/alias/handle.
+- Commit(ter) email must not be a GitHub noreply email.
+- Commit subject must not start with whitespace.
+- Commit subject must start with `<package name or prefix>: `.
+- Commit subject must start with a lower-case word after the prefix.
+- Commit subject must not end with a period.
 - Commit subject must be <= `MAX_SUBJECT_LEN_HARD` (and should be <=
   `MAX_SUBJECT_LEN_SOFT`) characters long. Limits are 60 and 50 by default,
   respectively and are configurable via the `max_subject_len_hard` and
   `max_subject_len_soft` inputs.
-- `Signed-off-by` must match author. Enabled via the `check_signoff` input.
-- `Signed-off-by` must not be a GitHub noreply email. Enabled via the
+- `Signed-off-by` must match author. Configured via the `check_signoff` input.
+- `Signed-off-by` must not be a GitHub noreply email. Configured via the
   `check_signoff` input.
-- Commit message must exist
+- Commit message must exist.
 - Commit message lines should be <= `MAX_BODY_LINE_LEN` characters long. Limit
   is 75 by default and is configurable via the `max_body_line_len` input.
-- Commit to stable branch should be marked as cherry-picked
+- Commit to stable branch should be marked as cherry-picked.
 
 ## Inputs
 
