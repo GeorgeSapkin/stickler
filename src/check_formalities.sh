@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+set -o pipefail
+
 # Based on https://openwrt.org/submitting-patches#submission_guidelines
 # Hard limit is arbitrary
 MAX_SUBJECT_LEN_HARD=${MAX_SUBJECT_LEN_HARD:-60}
