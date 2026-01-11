@@ -14,6 +14,8 @@ MAX_BODY_LINE_LEN=${MAX_BODY_LINE_LEN:-75}
 
 CHECK_BRANCH=${CHECK_BRANCH:-true}
 CHECK_SIGNOFF=${CHECK_SIGNOFF:-false}
+CHECK_TRAILING_NEWLINE=${CHECK_TRAILING_NEWLINE:-true}
+CHECK_TRAILING_WHITESPACE=${CHECK_TRAILING_WHITESPACE:-true}
 EXCLUDE_DEPENDABOT=${EXCLUDE_DEPENDABOT:-false}
 EXCLUDE_WEBLATE=${EXCLUDE_WEBLATE:-false}
 SHOW_LEGEND=${SHOW_LEGEND:-true}
@@ -74,7 +76,7 @@ _R=$'\xfa'
 GIT_HEADER='%C(yellow)commit %H%n%C(reset)Author: %an <%ae>%nCommit: %cn <%ce>%n%n%w(0,4,4)%B'
 # GH actions sometimes return a mix of body %b and raw body %B when body is
 # requested, so always use raw body
-GIT_VARS="%H${_F}%aN${_F}%aE${_F}%cN${_F}%cE${_F}%s${_F}%B${_F}Signed-off-by: %aN <%aE>${_F}%P"
+GIT_VARS="%H${_F}%aN${_F}%aE${_F}%cN${_F}%cE${_F}%s${_F}%B${_F}Signed-off-by: %aN <%aE>${_F}%P${_F}%G?"
 GIT_FORMAT="${_F}${GIT_HEADER}${_F}${GIT_VARS}${_R}"
 
 ACTION_PATH=${ACTION_PATH:+"$ACTION_PATH/src"}
@@ -200,13 +202,21 @@ output_split_fail_ex() {
 }
 
 # shellcheck disable=SC2329
-check_branch()         { [ "$CHECK_BRANCH" = 'true' ]; }
+check_branch()                   { [ "$CHECK_BRANCH" = 'true' ]; }
 # shellcheck disable=SC2329
-check_signoff()        { [ "$CHECK_SIGNOFF" = 'true' ]; }
+check_signoff()                  { [ "$CHECK_SIGNOFF" = 'true' ]; }
 # shellcheck disable=SC2329
-do_not_check_branch()  { ! check_branch; }
+check_trailing_newline()         { [ "$CHECK_TRAILING_NEWLINE" = 'true' ]; }
 # shellcheck disable=SC2329
-do_not_check_signoff() { ! check_signoff; }
+check_trailing_whitespace()      { [ "$CHECK_TRAILING_WHITESPACE" = 'true' ]; }
+# shellcheck disable=SC2329
+do_not_check_branch()            { ! check_branch; }
+# shellcheck disable=SC2329
+do_not_check_signoff()           { ! check_signoff; }
+# shellcheck disable=SC2329
+do_not_check_trailing_newline()  { ! check_trailing_newline; }
+# shellcheck disable=SC2329
+do_not_check_trailing_whitespace(){ ! check_trailing_whitespace; }
 # shellcheck disable=SC2329
 ends_with_period()     { [[ "$1" =~ \.$ ]]; }
 exclude_dependabot()   { [ "$EXCLUDE_DEPENDABOT" = 'true' ]; }
@@ -237,6 +247,16 @@ show_legend()          { [ "$SHOW_LEGEND" = 'true' ]; }
 show_feedback()        { [ -n "$FEEDBACK_URL" ]; }
 # shellcheck disable=SC2329
 starts_with_space()    { [[ "$1" =~ ^[[:space:]] ]]; }
+# shellcheck disable=SC2329
+is_bad_sign()          { [[ "$1" =~ ^[BRE]$ ]]; }
+# shellcheck disable=SC2329
+is_warn_sign()         { [[ "$1" =~ ^[UXY]$ ]]; }
+# shellcheck disable=SC2329
+is_unsigned()          { [ "$1" = 'N' ]; }
+# shellcheck disable=SC2329
+has_missing_newline()  { git show --pretty=format: "$1" | grep -q "\\ No newline at end of file"; }
+# shellcheck disable=SC2329
+has_trailing_whitespace(){ git show --check --pretty=format: "$1" >/dev/null 2>&1 && return 1; return 0; }
 
 # shellcheck disable=SC2329
 is_body_empty()        {
@@ -549,6 +569,38 @@ check_body() {
 		-warn-actual "a stable branch (\`${BASE_BRANCH#origin/}\`)"
 }
 
+check_signature() {
+	local status="$1"
+
+	check \
+		-rule 'Signature must be valid' \
+		-skip-if is_unsigned "$status" \
+		-skip-reason 'No signature' \
+		-fail-if is_bad_sign "$status" \
+		-fail-actual "Bad/Revoked/Error signature (Status: $status)" \
+		-warn-if is_warn_sign "$status" \
+		-warn-actual "Expired/Unknown signature (Status: $status)" \
+		-pass-reason 'Good signature'
+}
+
+check_content() {
+	local commit="$1"
+
+	check \
+		-rule 'Modified files must end with a newline' \
+		-skip-if do_not_check_trailing_newline \
+		-skip-reason 'disabled by configuration' \
+		-fail-if has_missing_newline "$commit" \
+		-fail-actual 'No newline at end of file'
+
+	check \
+		-rule 'Modified files must not contain trailing whitespace' \
+		-skip-if do_not_check_trailing_whitespace \
+		-skip-reason 'disabled by configuration' \
+		-warn-if has_trailing_whitespace "$commit" \
+		-warn-actual 'Trailing whitespace found'
+}
+
 main() {
 	# Initialize GitHub actions output
 	output 'content<<EOF'
@@ -588,7 +640,8 @@ main() {
 			subject \
 			body \
 			sob \
-			parent_hashes
+			parent_hashes \
+			sign_status
 		do
 			HEADER_SET=0
 			COMMIT="$commit"
@@ -614,6 +667,10 @@ main() {
 			check_subject "$subject"
 			reset_skip_reasons "$author_email"
 			check_body "$body" "$sob"
+			reset_skip_reasons "$author_email"
+			check_signature "$sign_status"
+			reset_skip_reasons "$author_email"
+			check_content "$commit"
 
 			echo
 		done
