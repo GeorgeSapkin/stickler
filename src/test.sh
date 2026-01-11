@@ -531,7 +531,11 @@ commit() {
 		case "$sign_key" in
 			good|bad|expired|unknown)
 				git_opts+=("-S")
+
 				local key_file="$REPO_DIR/.ssh/$sign_key"
+				if [ "$sign_key" = 'expired' ] && [ -f "${key_file}-cert.pub" ]; then
+					key_file="${key_file}-cert.pub"
+				fi
 				if [ -f "$key_file" ]; then
 					git config user.signingkey "$key_file"
 				fi
