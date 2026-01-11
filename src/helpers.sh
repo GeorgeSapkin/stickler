@@ -58,3 +58,16 @@ status_fail() {
 status_skip() {
 	status 39 skip "$1"
 }
+
+escape_latex() {
+	local text="$1"
+	text="${text//\\/\\textbackslash}"
+	text="${text//_/\\_}"
+	text="${text//\$/\\\$}"
+	text="${text//&/\\&}"
+	text="${text//%/\\%}"
+	text="${text//#/\\#}"
+	text="${text//\{/\\\{}"
+	text="${text//\}/\\\}}"
+	echo "$text"
+}
