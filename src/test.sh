@@ -90,7 +90,7 @@ define() {
 
 define \
 	-test          'Good commit' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: add new feature' \
@@ -102,7 +102,7 @@ define \
 
 define \
 	-test          'Subject: double prefix' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'kernel: 6.18: add new feature' \
@@ -114,7 +114,7 @@ define \
 
 define \
 	-test          'Subject: double prefix and capitalized first word' \
-	-expected      '0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'kernel: 6.18: Add new feature' \
@@ -126,7 +126,7 @@ define \
 
 define \
 	-test          'Bad check parsing test' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: add new feature' \
@@ -142,7 +142,7 @@ define \
 
 define \
 	-test          'Revert commit' \
-	-expected      '0 0 0 0 0 0 3 3 3 3 3 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 3 3 3 3 3 0 0 0 0 3' \
 	-author        'Revert Author' \
 	-email         'revert.author@example.com' \
 	-subject       "Revert 'package: add new feature'" \
@@ -154,8 +154,21 @@ define \
 
 # shellcheck disable=SC2016
 define \
+	-test          'Fixup commit' \
+	-expected      '0 0 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3' \
+	-author        'Good Author' \
+	-email         'good.author@example.com' \
+	-subject       'fixup! package: subject' \
+	-body          <<-'EOF'
+		This is a fixup commit.
+
+		Signed-off-by: Good Author <good.author@example.com>
+	EOF
+
+# shellcheck disable=SC2016
+define \
 	-test          'Body: malicious body shell injection' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: malicious body shell injection' \
@@ -167,7 +180,7 @@ define \
 
 define \
 	-test          'Body: malicious body check injection' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: malicious body check injection' \
@@ -179,7 +192,7 @@ define \
 
 define \
 	-test          'Body: missing Signed-off-by but check disabled' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 3 3 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 3 3 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: fail on missing signed-off-by' \
@@ -188,7 +201,7 @@ define \
 
 define \
 	-test          'Body: mismatched Signed-off-by but check disabled' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 3 3 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 3 3 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: fail on mismatched signed-off-by' \
@@ -201,7 +214,7 @@ define \
 
 define \
 	-test          'Bad author email (GitHub noreply)' \
-	-expected      '0 0 0 1 0 1 0 0 0 0 0 0 1 0 0 3' \
+	-expected      '0 0 0 0 1 0 1 0 0 0 0 0 0 1 0 0 3' \
 	-author        'Bad Email' \
 	-email         'bad.email@users.noreply.github.com' \
 	-subject       'test: fail on bad author email' \
@@ -213,7 +226,7 @@ define \
 
 define \
 	-test          'Subject: starts with whitespace' \
-	-expected      '0 0 0 0 0 0 1 1 3 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 1 1 3 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       ' package: subject starts with whitespace' \
@@ -225,7 +238,7 @@ define \
 
 define \
 	-test          'Subject: no prefix' \
-	-expected      '0 0 0 0 0 0 0 1 3 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 1 3 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'This subject has no prefix' \
@@ -237,7 +250,7 @@ define \
 
 define \
 	-test          'Subject: capitalized first word' \
-	-expected      '0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: Capitalized first word' \
@@ -249,7 +262,7 @@ define \
 
 define \
 	-test          'Subject: ends with a period' \
-	-expected      '0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: subject ends with a period.' \
@@ -261,7 +274,7 @@ define \
 
 define \
 	-test          'Subject: too long (hard limit)' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: this subject is way too long and should fail the hard limit check of 60 chars' \
@@ -273,7 +286,7 @@ define \
 
 define \
 	-test          'Body: missing Signed-off-by' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 1 3 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 1 3 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: fail on missing signed-off-by' \
@@ -281,7 +294,7 @@ define \
 
 define \
 	-test          'Body: mismatched Signed-off-by' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 1 3 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 1 3 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: fail on mismatched signed-off-by' \
@@ -293,7 +306,7 @@ define \
 
 define \
 	-test          'Body: empty' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: fail on empty body' \
@@ -301,7 +314,7 @@ define \
 
 define \
 	-test          'Author name is a single word' \
-	-expected      '0 0 2 0 2 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 2 0 2 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Nickname' \
 	-email         'nickname@example.com' \
 	-subject       'test: warn on single-word author name' \
@@ -313,7 +326,7 @@ define \
 
 define \
 	-test          'Subject: too long (soft limit)' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 2 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: this subject is long and should trigger a warning' \
@@ -325,7 +338,7 @@ define \
 
 define \
 	-test          'Body: line too long' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 2 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: warn on long body line' \
@@ -337,7 +350,7 @@ define \
 
 define \
 	-test          'Body: line almost too long' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'test: pass on not too long body line' \
@@ -349,7 +362,7 @@ define \
 
 define \
 	-test          'Exception: dependabot' \
-	-expected      '0 0 3 3 3 3 3 3 3 3 3 3 3 0 3 3' \
+	-expected      '0 0 0 3 3 3 3 3 3 3 3 3 3 3 0 3 3' \
 	-author        'dependabot[bot]' \
 	-email         'dependabot[bot]@users.noreply.github.com' \
 	-subject       'CI: bump something from 1 to 2' \
@@ -360,7 +373,7 @@ define \
 
 define \
 	-test          'No exception: dependabot' \
-	-expected      '0 0 2 1 2 1 0 0 0 0 0 1 3 0 0 3' \
+	-expected      '0 0 0 2 1 2 1 0 0 0 0 0 1 3 0 0 3' \
 	-author        'dependabot[bot]' \
 	-email         'dependabot[bot]@users.noreply.github.com' \
 	-subject       'CI: bump something from 1 to 2' \
@@ -370,7 +383,7 @@ define \
 
 define \
 	-test          'Exception: weblate' \
-	-expected      '0 0 3 3 3 3 3 3 3 3 3 3 3 0 3 3' \
+	-expected      '0 0 0 3 3 3 3 3 3 3 3 3 3 3 0 3 3' \
 	-author        'Hosted Weblate' \
 	-email         'hosted@weblate.org' \
 	-subject       'Translated using Weblate (English)' \
@@ -381,7 +394,7 @@ define \
 
 define \
 	-test          'No exception: weblate' \
-	-expected      '0 0 0 0 0 0 0 1 3 0 0 1 3 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 1 3 0 0 1 3 0 0 3' \
 	-author        'Hosted Weblate' \
 	-email         'hosted@weblate.org' \
 	-subject       'Translated using Weblate (English)' \
@@ -400,7 +413,7 @@ define \
 
 define \
 	-test          'PR from master' \
-	-expected      '1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: add new feature' \
@@ -415,7 +428,7 @@ define \
 
 define \
 	-test          'Feature branch check disabled' \
-	-expected      '3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: add new feature' \
@@ -428,7 +441,7 @@ define \
 
 define \
 	-test          'Feature branch check enabled, PR from main fails' \
-	-expected      '1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: add new feature' \
@@ -442,7 +455,7 @@ define \
 
 define \
 	-test          'Feature branch check enabled, PR from feature branch passes' \
-	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
+	-expected      '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3' \
 	-author        'Good Author' \
 	-email         'good.author@example.com' \
 	-subject       'package: add new feature' \
