@@ -32,6 +32,8 @@ Commit & PR formalities checker based on the OpenWrt [submission guidelines](
 - Commit message lines should be <= `MAX_BODY_LINE_LEN` characters long. Limit
   is 75 by default and is configurable via the `max_body_line_len` input.
 - Commit to stable branch should be marked as cherry-picked.
+- Commit signature must be valid. Missing signatures are ignored, but invalid
+  signatures will cause a failure.
 
 ## Inputs
 
